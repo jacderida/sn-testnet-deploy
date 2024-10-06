@@ -127,12 +127,6 @@ enum Commands {
         /// argument.
         #[clap(long)]
         node_vm_count: Option<u16>,
-        /// The maximum of archived log files to keep. After reaching this limit, the older files are deleted.
-        #[clap(long, default_value = "5")]
-        max_archived_log_files: u16,
-        /// The maximum number of log files to keep. After reaching this limit, the older files are archived.
-        #[clap(long, default_value = "10")]
-        max_log_files: u16,
         /// Optionally set the payment forward public key for a custom safenode binary.
         ///
         /// This argument only applies if the '--branch' and '--repo-owner' arguments are used.
@@ -333,12 +327,6 @@ enum Commands {
         /// argument.
         #[clap(long)]
         node_vm_count: Option<u16>,
-        /// The maximum of archived log files to keep. After reaching this limit, the older files are deleted.
-        #[clap(long, default_value = "5")]
-        max_archived_log_files: u16,
-        /// The maximum number of log files to keep. After reaching this limit, the older files are archived.
-        #[clap(long, default_value = "10")]
-        max_log_files: u16,
         /// Optionally set the payment forward public key for a custom safenode binary.
         ///
         /// This argument only applies if the '--branch' and '--repo-owner' arguments are used.
@@ -790,12 +778,6 @@ enum Commands {
         /// The name of the existing network to upscale.
         #[arg(short = 'n', long, verbatim_doc_comment)]
         name: String,
-        /// The maximum of archived log files to keep. After reaching this limit, the older files are deleted.
-        #[clap(long, default_value = "5")]
-        max_archived_log_files: u16,
-        /// The maximum number of log files to keep. After reaching this limit, the older files are archived.
-        #[clap(long, default_value = "10")]
-        max_log_files: u16,
         /// Set to only run the Terraform plan rather than applying the changes.
         ///
         /// Can be useful to preview the upscale to make sure everything is ok and that no other
@@ -1110,8 +1092,6 @@ async fn main() -> Result<()> {
             network_royalties_pk,
             node_count,
             node_vm_count,
-            max_archived_log_files,
-            max_log_files,
             payment_forward_pk,
             private_node_count,
             private_node_vm_count,
@@ -1187,8 +1167,6 @@ async fn main() -> Result<()> {
                     log_format,
                     name: name.clone(),
                     node_count: node_count.unwrap_or(environment_type.get_default_node_count()),
-                    max_archived_log_files,
-                    max_log_files,
                     output_inventory_dir_path: inventory_service
                         .working_directory_path
                         .join("ansible")
@@ -1237,8 +1215,6 @@ async fn main() -> Result<()> {
             network_royalties_pk,
             node_count,
             node_vm_count,
-            max_archived_log_files,
-            max_log_files,
             payment_forward_pk,
             private_node_count,
             private_node_vm_count,
@@ -1343,8 +1319,6 @@ async fn main() -> Result<()> {
                     name: name.clone(),
                     node_count: node_count.unwrap_or(environment_type.get_default_node_count()),
                     node_vm_count,
-                    max_archived_log_files,
-                    max_log_files,
                     output_inventory_dir_path: inventory_service
                         .working_directory_path
                         .join("ansible")
@@ -2092,8 +2066,6 @@ async fn main() -> Result<()> {
             downloaders_count,
             infra_only,
             name,
-            max_archived_log_files,
-            max_log_files,
             plan,
             provider,
             public_rpc,
@@ -2130,8 +2102,6 @@ async fn main() -> Result<()> {
                     desired_uploader_vm_count,
                     desired_uploaders_count,
                     downloaders_count,
-                    max_archived_log_files,
-                    max_log_files,
                     infra_only,
                     plan,
                     public_rpc,
