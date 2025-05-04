@@ -1110,8 +1110,8 @@ impl AnsibleProvisioner {
     pub async fn provision_static_uploader(
         &self,
         options: &ProvisionOptions,
-        genesis_multiaddr: Option<String>,
-        genesis_network_contacts_url: Option<String>,
+        genesis_multiaddr: Vec<String>,
+        genesis_network_contacts_url: Vec<String>,
     ) -> Result<()> {
         let start = Instant::now();
 
