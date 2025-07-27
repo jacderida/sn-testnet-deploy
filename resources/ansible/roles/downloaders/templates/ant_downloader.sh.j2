@@ -272,7 +272,7 @@ download_file() {
     
     QUORUM_ARG=""
     if [[ "$MODE" == "verifier" ]]; then
-      QUORUM_ARG="--quorum majority"
+      QUORUM_ARG="--quorum all"
     fi
 
     timestamp=$(date +"%Y%m%d_%H%M%S")

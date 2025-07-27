@@ -339,7 +339,6 @@ pub fn build_node_extra_vars_doc(
         NodeType::SymmetricPrivateNode => {
             // Symmetric private nodes need relay and private ip.
             extra_vars.add_variable("private_ip", "true");
-            extra_vars.add_variable("relay", "true");
         }
         _ => {}
     }
