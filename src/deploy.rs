@@ -5,7 +5,10 @@
 // Please see the LICENSE file for more details.
 
 use crate::{
-    ansible::provisioning::{PrivateNodeProvisionInventory, ProvisionOptions},
+    ansible::{
+        inventory::AnsibleInventoryType,
+        provisioning::{PrivateNodeProvisionInventory, ProvisionOptions},
+    },
     error::Result,
     funding::get_address_from_sk,
     get_anvil_node_data_hardcoded, get_bootstrap_cache_url, get_genesis_multiaddr,
@@ -360,7 +363,8 @@ impl TestnetDeployer {
 
         self.ansible_provisioner
             .print_ansible_run_banner("Provision Uploaders");
-        self.ansible_provisioner
+        let result = self
+            .ansible_provisioner
             .provision_uploaders(
                 &provision_options,
                 genesis_multiaddrs.clone(),
@@ -370,7 +374,12 @@ impl TestnetDeployer {
             .map_err(|err| {
                 println!("Failed to provision Clients {err:?}");
                 err
-            })?;
+            });
+        if let Err(crate::Error::EmptyInventory(AnsibleInventoryType::Clients)) = result {
+            println!("No clients were provisioned as part of this deployment.");
+        } else if let Err(err) = result {
+            return Err(err);
+        }
         self.ansible_provisioner
             .print_ansible_run_banner("Provision Downloaders");
         self.ansible_provisioner
