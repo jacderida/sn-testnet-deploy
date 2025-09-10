@@ -63,8 +63,8 @@ pub enum Error {
     FilenameNotRetrieved,
     #[error(transparent)]
     FsExtraError(#[from] fs_extra::error::Error),
-    #[error("Could not obtain Genesis multiaddr")]
-    GenesisListenAddress,
+    #[error("Could not obtain Genesis multiaddr for {}", .0.iter().map(|ip| ip.to_string()).collect::<Vec<_>>().join(", "))]
+    GenesisListenAddress(Vec<IpAddr>),
     #[error("To provision the remaining nodes the multiaddr of the genesis node must be supplied")]
     GenesisMultiAddrNotSupplied,
     #[error("Failed to retrieve '{0}' from '{1}")]
