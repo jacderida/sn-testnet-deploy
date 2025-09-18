@@ -1092,15 +1092,19 @@ pub fn get_genesis_multiaddr(
     ansible_runner: &AnsibleRunner,
     ssh_client: &SshClient,
 ) -> Result<Option<(String, IpAddr)>> {
+    debug!("Attempting to retrieve the genesis multiaddr...");
     let genesis_inventory = ansible_runner.get_inventory(AnsibleInventoryType::Genesis, true)?;
     if genesis_inventory.is_empty() {
+        debug!("The current deployment does not have a genesis node");
         return Ok(None);
     }
     let genesis_ip = genesis_inventory[0].public_ip_addr;
+    debug!("Using genesis IP {genesis_ip}");
 
     // It's possible for the genesis host to be altered from its original state where a node was
     // started with the `--first` flag.
     // First attempt: try to find node with first=true
+    debug!("First attempt: querying the node registry with jq using the `first` attribute...");
     let multiaddr = ssh_client
         .run_command(
             &genesis_ip,
@@ -1116,8 +1120,13 @@ pub fn get_genesis_multiaddr(
 
     // Second attempt: if first attempt failed, see if any node is available.
     let multiaddr = match multiaddr {
-        Some(addr) => addr,
-        None => ssh_client
+        Some(addr) => {
+            debug!("Obtained multiaddr {addr}");
+            addr
+        }
+        None => {
+            debug!("Second attempt: querying the node registry with jq without the `first` attribute...");
+            ssh_client
             .run_command(
                 &genesis_ip,
                 "root",
@@ -1126,7 +1135,8 @@ pub fn get_genesis_multiaddr(
             )?
             .first()
             .cloned()
-            .ok_or_else(|| Error::GenesisListenAddress)?,
+            .ok_or_else(|| Error::GenesisListenAddress)?
+        }
     };
 
     Ok(Some((multiaddr, genesis_ip)))
