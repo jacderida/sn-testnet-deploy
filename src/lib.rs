@@ -474,6 +474,7 @@ impl UpgradeOptions {
         }
 
         extra_vars.add_boolean_variable("do_not_start_nodes", self.do_not_start_nodes);
+
         extra_vars.build()
     }
 }
@@ -737,12 +738,14 @@ impl TestnetDeployer {
         interval: Duration,
         node_type: Option<NodeType>,
         custom_inventory: Option<Vec<VirtualMachine>>,
+        service_manager: bool,
     ) -> Result<()> {
         self.ansible_provisioner.start_nodes(
             &self.environment_name,
             interval,
             node_type,
             custom_inventory,
+            service_manager,
         )?;
         Ok(())
     }

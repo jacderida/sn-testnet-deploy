@@ -1469,9 +1469,11 @@ impl AnsibleProvisioner {
         interval: Duration,
         node_type: Option<NodeType>,
         custom_inventory: Option<Vec<VirtualMachine>>,
+        service_manager: bool,
     ) -> Result<()> {
         let mut extra_vars = ExtraVarsDocBuilder::default();
         extra_vars.add_variable("interval", &interval.as_millis().to_string());
+        extra_vars.add_variable("service_manager", &service_manager.to_string());
 
         if let Some(node_type) = node_type {
             println!("Running the start nodes playbook for {node_type:?} nodes");
