@@ -695,12 +695,12 @@ impl DeploymentInventoryService {
     }
 
     /// Connects to a VM with SSH and retrieves the version of an available antnode service.
-    /// Uses antctl status --json to find running nodes and extract version information.
+    /// Uses antctl status --json to find nodes and extract version information.
     fn get_antnode_version(&self, vm: &VirtualMachine) -> Result<Version> {
         let output = self.ssh_client.run_command(
             &vm.public_ip_addr,
             &self.cloud_provider.get_ssh_user(),
-            "antctl status --json | jq -r '.nodes[] | select(.status == \"Running\") | .version' | head -n1",
+            "antctl status --json | jq -r '.nodes[] | .version' | head -n1",
             true,
         )?;
 
