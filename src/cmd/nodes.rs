@@ -27,6 +27,7 @@ pub async fn handle_start_command(
     name: String,
     node_type: Option<NodeType>,
     provider: CloudProvider,
+    service_manager: bool,
 ) -> Result<()> {
     let testnet_deployer = TestnetDeployBuilder::default()
         .ansible_forks(forks)
@@ -52,7 +53,7 @@ pub async fn handle_start_command(
         None
     };
 
-    testnet_deployer.start(interval, node_type, custom_inventory)?;
+    testnet_deployer.start(interval, node_type, custom_inventory, service_manager)?;
 
     Ok(())
 }

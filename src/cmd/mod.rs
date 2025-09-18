@@ -859,6 +859,12 @@ pub enum Commands {
         /// The cloud provider for the environment.
         #[clap(long, value_parser = parse_provider, verbatim_doc_comment, default_value_t = CloudProvider::DigitalOcean)]
         provider: CloudProvider,
+        /// Use systemctl to start services directly instead of antctl.
+        ///
+        /// When this flag is set, systemctl start will be used to start individual antnode services
+        /// (antnode1, antnode2, etc.) instead of using antctl.
+        #[clap(long)]
+        service_manager: bool,
     },
     /// Get the status of all nodes in the environment.
     #[clap(name = "status")]

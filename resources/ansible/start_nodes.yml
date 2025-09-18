@@ -4,6 +4,21 @@
   become: True
   vars:
     interval: "{{ interval }}"
+    service_manager: "{{ service_manager | default(false) }}"
   tasks:
-    - name: start
+    - name: get list of antnode services
+      ansible.builtin.shell: |
+        antctl status --json | jq -r '.nodes[].service_name' | sort
+      register: antnode_services
+      when: service_manager | bool
+
+    - name: start nodes using systemctl
+      ansible.builtin.systemd:
+        name: "{{ item }}"
+        state: started
+      loop: "{{ antnode_services.stdout_lines | default([]) }}"
+      when: service_manager | bool
+
+    - name: start nodes using antctl
       ansible.builtin.command: "antctl start --interval {{ interval }}"
+      when: not (service_manager | bool)

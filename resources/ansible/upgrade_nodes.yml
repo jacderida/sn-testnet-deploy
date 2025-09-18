@@ -20,7 +20,6 @@
         cmd="$cmd --version={{ antnode_version }}"
         {% elif node_archive_url is defined %}
         cmd="$cmd --url={{ node_archive_url }}"
-        cmd="$cmd --force"
         echo "$cmd" >> /tmp/upgrade_cmd
         {% endif %}
         {% if do_not_start_nodes is defined and do_not_start_nodes %}

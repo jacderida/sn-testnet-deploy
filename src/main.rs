@@ -340,6 +340,7 @@ async fn main() -> Result<()> {
             name,
             node_type,
             provider,
+            service_manager,
         } => {
             nodes::handle_start_command(
                 custom_inventory,
@@ -348,6 +349,7 @@ async fn main() -> Result<()> {
                 name,
                 node_type,
                 provider,
+                service_manager,
             )
             .await?;
             Ok(())
