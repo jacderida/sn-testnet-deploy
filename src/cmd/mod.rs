@@ -954,6 +954,9 @@ pub enum Commands {
         /// unreachable during the main run.
         #[clap(name = "custom-inventory", long, use_value_delimiter = true)]
         custom_inventory: Option<Vec<String>>,
+        /// Set to prevent nodes from being started after they are upgraded.
+        #[clap(long)]
+        do_not_start_nodes: bool,
         /// Set to force the node manager to accept the antnode version provided.
         ///
         /// This can be used to downgrade antnode to a known good version.
