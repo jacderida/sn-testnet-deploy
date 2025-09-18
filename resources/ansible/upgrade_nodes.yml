@@ -23,6 +23,9 @@
         cmd="$cmd --force"
         echo "$cmd" >> /tmp/upgrade_cmd
         {% endif %}
+        {% if do_not_start_nodes is defined and do_not_start_nodes %}
+        cmd="$cmd --do-not-start"
+        {% endif %}
         eval "$cmd"
       args:
         executable: /bin/bash
