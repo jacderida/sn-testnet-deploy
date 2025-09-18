@@ -433,6 +433,7 @@ pub struct UpgradeOptions {
     pub ansible_verbose: bool,
     pub branch: Option<String>,
     pub custom_inventory: Option<Vec<VirtualMachine>>,
+    pub do_not_start_nodes: bool,
     pub env_variables: Option<Vec<(String, String)>>,
     pub force: bool,
     pub forks: usize,
@@ -472,6 +473,7 @@ impl UpgradeOptions {
             extra_vars.add_node_url_or_version(&self.name, &binary_option);
         }
 
+        extra_vars.add_boolean_variable("do_not_start_nodes", self.do_not_start_nodes);
         extra_vars.build()
     }
 }

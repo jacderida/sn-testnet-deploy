@@ -289,6 +289,7 @@ pub fn build_node_extra_vars_doc(
 
     extra_vars.add_boolean_variable("enable_telegraf", options.enable_telegraf);
     extra_vars.add_boolean_variable("disable_nodes", options.disable_nodes);
+    extra_vars.add_boolean_variable("do_not_start_nodes", options.do_not_start_nodes);
 
     extra_vars.add_node_url_or_version(&options.name, &options.binary_option);
     extra_vars.add_antctl_url(&options.name, &options.binary_option);

@@ -386,6 +386,9 @@ pub enum Commands {
         /// Set to disable Telegraf metrics collection on all nodes.
         #[clap(long)]
         disable_telegraf: bool,
+        /// Set to prevent nodes from being started after they are added.
+        #[clap(long)]
+        do_not_start_nodes: bool,
         /// The type of deployment.
         ///
         /// Possible values are 'development', 'production' or 'staging'. The value used will
