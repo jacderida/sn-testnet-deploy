@@ -966,6 +966,9 @@ pub enum Commands {
         /// unreachable during the main run.
         #[clap(name = "custom-inventory", long, use_value_delimiter = true)]
         custom_inventory: Option<Vec<String>>,
+        /// Use this flag to disable running the node status update after the nodes complete.
+        #[clap(long, default_value_t = false)]
+        disable_status: bool,
         /// Set to prevent nodes from being started after they are upgraded.
         #[clap(long)]
         do_not_start_nodes: bool,

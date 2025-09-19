@@ -15,6 +15,7 @@ pub async fn handle_upgrade_command(
     ansible_verbose: bool,
     branch: Option<String>,
     custom_inventory: Option<Vec<String>>,
+    disable_status: bool,
     do_not_start_nodes: bool,
     env_variables: Option<Vec<(String, String)>>,
     force: bool,
@@ -74,13 +75,15 @@ pub async fn handle_upgrade_command(
         version,
     })?;
 
-    // Recreate the deployer with an increased number of forks for retrieving the status.
-    let testnet_deployer = TestnetDeployBuilder::default()
-        .ansible_forks(50)
-        .environment_name(&name)
-        .provider(provider)
-        .build()?;
-    testnet_deployer.status()?;
+    if !disable_status {
+        // Recreate the deployer with an increased number of forks for retrieving the status.
+        let testnet_deployer = TestnetDeployBuilder::default()
+            .ansible_forks(50)
+            .environment_name(&name)
+            .provider(provider)
+            .build()?;
+        testnet_deployer.status().await?;
+    }
 
     Ok(())
 }
