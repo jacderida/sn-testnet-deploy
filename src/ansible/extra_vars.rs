@@ -308,7 +308,7 @@ pub fn build_node_extra_vars_doc(
             extra_vars.add_variable("private_ip", "true");
             extra_vars.add_boolean_variable("enable_upnp", false);
         }
-        NodeType::SymmetricPrivateNode => {
+        NodeType::SymmetricPrivateNode | NodeType::PortRestrictedConePrivateNode => {
             // Symmetric private nodes need relay and private ip.
             extra_vars.add_variable("private_ip", "true");
             extra_vars.add_variable("relay", "true");
