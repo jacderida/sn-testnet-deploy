@@ -281,10 +281,12 @@ pub fn build_node_extra_vars_doc(
         | NodeType::PortRestrictedConePrivateNode
         | NodeType::Upnp => {
             extra_vars.add_boolean_variable("private_ip", true);
+            extra_vars.add_boolean_variable("enable_port", true);
             extra_vars.add_boolean_variable("enable_upnp", false);
         }
         _ => {
             extra_vars.add_boolean_variable("private_ip", false);
+            extra_vars.add_boolean_variable("enable_port", true);
             extra_vars.add_boolean_variable("enable_upnp", false);
         }
     }
