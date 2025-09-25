@@ -280,11 +280,12 @@ pub fn build_node_extra_vars_doc(
         | NodeType::SymmetricPrivateNode
         | NodeType::PortRestrictedConePrivateNode
         | NodeType::Upnp => {
-            extra_vars.add_variable("private_ip", "true");
+            extra_vars.add_boolean_variable("private_ip", true);
             extra_vars.add_boolean_variable("enable_upnp", false);
         }
         _ => {
-            extra_vars.add_boolean_variable("enable_upnp", false);
+            extra_vars.add_boolean_variable("private_ip", true);
+            extra_vars.add_boolean_variable("enable_upnp", true);
         }
     }
 

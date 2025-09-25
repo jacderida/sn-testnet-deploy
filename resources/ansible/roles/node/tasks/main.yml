@@ -72,7 +72,6 @@
       - "--rewards-address={{ rewards_address }}"
       - "--max-archived-log-files={{ max_archived_log_files }}"
       - "--max-log-files={{ max_log_files }}"
-      - "{{ ('--node-ip=' + private_ip_eth1.stdout) if (enable_upnp | bool) or (private_ip | bool) else omit }}"
       - "{{ ('--metrics-port=' + metrics_port|string) if not use_port_range else omit }}"
       - "{{ ('--metrics-port=' + metrics_start_port|string + '-' + metrics_end_port|string) if use_port_range else omit }}"
       - "{{ ('--log-format=' + log_format) if log_format is defined else omit }}"
