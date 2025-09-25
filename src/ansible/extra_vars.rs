@@ -275,8 +275,17 @@ pub fn build_node_extra_vars_doc(
     );
     extra_vars.add_variable("max_log_files", &options.max_log_files.to_string());
 
-    if matches!(node_type, NodeType::Upnp) {
-        extra_vars.add_boolean_variable("enable_upnp", true);
+    match node_type {
+        NodeType::FullConePrivateNode
+        | NodeType::SymmetricPrivateNode
+        | NodeType::PortRestrictedConePrivateNode
+        | NodeType::Upnp => {
+            extra_vars.add_variable("private_ip", "true");
+            extra_vars.add_boolean_variable("enable_upnp", false);
+        }
+        _ => {
+            extra_vars.add_boolean_variable("enable_upnp", false);
+        }
     }
 
     if write_older_cache_files {
