@@ -277,7 +277,6 @@ pub fn build_node_extra_vars_doc(
 
     match node_type {
         NodeType::FullConePrivateNode
-        | NodeType::SymmetricPrivateNode
         | NodeType::PortRestrictedConePrivateNode
         | NodeType::Upnp => {
             extra_vars.add_boolean_variable("private_ip", true);
