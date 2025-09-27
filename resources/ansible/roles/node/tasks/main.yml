@@ -16,14 +16,14 @@
 - name: calculate number of nodes to add
   set_fact:
     nodes_to_add: "{{ node_instance_count | int - (current_node_count | default(0)) | int }}"
-
 # 
-# Calculate the port range
+# Calculate the node port range
 #
 - name: check if we need a port range
   set_fact:
-    use_port_range: "{{ nodes_to_add | default(0) | int > 1 }}"
     metrics_port: "{{ initial_metrics_start_port | int + (current_node_count | default(0)) | int }}"
+    node_port: "{{ 40000 | int + (current_node_count | default(0)) | int }}"
+    use_port_range: "{{ nodes_to_add | default(0) | int > 1 }}"
   when: nodes_to_add | default(0) | int > 0
 
 - name: set default value for use_port_range
@@ -34,12 +34,38 @@
 - name: calculate start port
   set_fact:
     metrics_start_port: "{{ initial_metrics_start_port | int + (current_node_count | default(0)) | int }}"
+    node_start_port: "{{ 40000 | int + (current_node_count | default(0)) | int }}"
   when: use_port_range | bool
 
 - name: calculate end port
   set_fact:
     metrics_end_port: "{{ metrics_start_port | int + nodes_to_add | int - 1 | int }}"
-  when: use_port_range
+    node_end_port: "{{ node_start_port | int + nodes_to_add | int - 1 | int }}"
+  when: use_port_range | bool
+
+# 
+# Calculate the port range
+#
+# - name: check if we need a port range
+#   set_fact:
+#     use_port_range: "{{ nodes_to_add | default(0) | int > 1 }}"
+#     metrics_port: "{{ initial_metrics_start_port | int + (current_node_count | default(0)) | int }}"
+#   when: nodes_to_add | default(0) | int > 0
+#
+# - name: set default value for use_port_range
+#   set_fact:
+#     use_port_range: false
+#   when: use_port_range is not defined
+#
+# - name: calculate start port
+#   set_fact:
+#     metrics_start_port: "{{ initial_metrics_start_port | int + (current_node_count | default(0)) | int }}"
+#   when: use_port_range | bool
+#
+# - name: calculate end port
+#   set_fact:
+#     metrics_end_port: "{{ metrics_start_port | int + nodes_to_add | int - 1 | int }}"
+#   when: use_port_range
  
 #
 # Obtain private IP if relay is set
@@ -73,7 +99,7 @@
       - "--max-archived-log-files={{ max_archived_log_files }}"
       - "--max-log-files={{ max_log_files }}"
       - "{{ ('--node-ip=' + private_ip_eth1.stdout) if (enable_upnp | bool) or (private_ip | bool) else omit }}"
-      - "{{ ('--port=40000') if (enable_port | bool) else omit }}"
+      - "{{ ('--node-port=40000') if (enable_port | bool) else omit }}"
       - "{{ ('--metrics-port=' + metrics_port|string) if not use_port_range else omit }}"
       - "{{ ('--metrics-port=' + metrics_start_port|string + '-' + metrics_end_port|string) if use_port_range else omit }}"
       - "{{ ('--log-format=' + log_format) if log_format is defined else omit }}"
