@@ -6,7 +6,7 @@
 
 use crate::{
     ansible::{
-        inventory::cleanup_environment_inventory,
+        inventory::{cleanup_environment_inventory, generate_environment_inventory},
         provisioning::{AnsibleProvisioner, ProvisionOptions},
         AnsibleRunner,
     },
@@ -657,6 +657,16 @@ impl ClientsDeployer {
     pub async fn clean(&self) -> Result<()> {
         let environment_details =
             get_environment_details(&self.environment_name, &self.s3_repository).await?;
+        // When running in the context of a workflow, the inventory files won't exist because
+        // the runner is a fresh machine. Generate them before attempting to drain funds.
+        // These are DigitalOcean dynamic inventory configs that query the DO API using tags,
+        // so they can be regenerated from the template without any local state.
+        let inventory_dir = self.working_directory_path.join("ansible").join("inventory");
+        generate_environment_inventory(
+            &self.environment_name,
+            &self.inventory_file_path,
+            &inventory_dir,
+        )?;
         crate::funding::drain_funds(&self.ansible_provisioner, &environment_details).await?;
 
         self.destroy_infra(&environment_details).await?;
