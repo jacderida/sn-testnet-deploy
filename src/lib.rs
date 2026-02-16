@@ -30,7 +30,9 @@ const STORAGE_REQUIRED_PER_NODE: u16 = 7;
 use crate::{
     ansible::{
         extra_vars::ExtraVarsDocBuilder,
-        inventory::{cleanup_environment_inventory, AnsibleInventoryType},
+        inventory::{
+            cleanup_environment_inventory, generate_environment_inventory, AnsibleInventoryType,
+        },
         provisioning::AnsibleProvisioner,
         AnsibleRunner,
     },
@@ -1087,6 +1089,19 @@ impl TestnetDeployer {
                 })
                 .ok();
         if let Some(environment_details) = &environment_details {
+            // When running in the context of a workflow, the inventory files won't exist because
+            // the runner is a fresh machine. Generate them before attempting to drain funds.
+            // These are DigitalOcean dynamic inventory configs that query the DO API using tags,
+            // so they can be regenerated from the template without any local state.
+            let inventory_dir = self
+                .working_directory_path
+                .join("ansible")
+                .join("inventory");
+            generate_environment_inventory(
+                &self.environment_name,
+                &self.inventory_file_path,
+                &inventory_dir,
+            )?;
             funding::drain_funds(&self.ansible_provisioner, environment_details).await?;
         }
 

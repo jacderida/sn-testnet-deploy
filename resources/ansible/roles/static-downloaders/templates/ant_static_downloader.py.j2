@@ -363,6 +363,9 @@ class AntDownloader:
         self.semantic_version, self.network_version, self.package_version, self.branch, self.git_hash, self.build_date = self._get_ant_version_info()
         
         self.current_address_index = self.state_manager.load_address_index()
+        if self.current_address_index >= len(self.addresses):
+            self.current_address_index = 0
+            self.state_manager.save_address_index(0)
         self.last_sleep_time = time.time()
         
         self._handle_crashed_download_on_startup()
@@ -641,8 +644,8 @@ class AntDownloader:
             if self.current_address_index >= len(self.addresses):
                 self.current_address_index = 0
                 print("Completed full cycle: sleeping for 24 hours before next cycle...")
-                print("Returning to beginning of addresses")
                 time.sleep(86400)
+                print("Returning to beginning of addresses")
             
             print(f"Processing address {self.current_address_index + 1} of {len(self.addresses)}")
             record = self.addresses[self.current_address_index]
