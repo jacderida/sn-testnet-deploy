@@ -661,7 +661,10 @@ impl ClientsDeployer {
         // the runner is a fresh machine. Generate them before attempting to drain funds.
         // These are DigitalOcean dynamic inventory configs that query the DO API using tags,
         // so they can be regenerated from the template without any local state.
-        let inventory_dir = self.working_directory_path.join("ansible").join("inventory");
+        let inventory_dir = self
+            .working_directory_path
+            .join("ansible")
+            .join("inventory");
         generate_environment_inventory(
             &self.environment_name,
             &self.inventory_file_path,
