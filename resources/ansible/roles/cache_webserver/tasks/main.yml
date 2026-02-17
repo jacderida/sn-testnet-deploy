@@ -11,6 +11,9 @@
     patterns: "*.json"
     recurse: no
   register: version0_file
+  retries: 5
+  delay: 3
+  until: version0_file.files | length > 0
 
 - name: find the version1 json file
   find:
@@ -18,6 +21,9 @@
     patterns: "*.json"
     recurse: no
   register: version1_file
+  retries: 5
+  delay: 3
+  until: version1_file.files | length > 0
 
 - name: create a map of versions to their respective json files
   set_fact:
