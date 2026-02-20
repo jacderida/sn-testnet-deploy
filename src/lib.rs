@@ -107,7 +107,7 @@ impl std::str::FromStr for DeploymentType {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy)]
 pub enum NodeType {
     FullConePrivateNode,
     PortRestrictedConePrivateNode,

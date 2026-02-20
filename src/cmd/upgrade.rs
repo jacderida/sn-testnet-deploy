@@ -4,7 +4,7 @@
 // This SAFE Network Software is licensed under the BSD-3-Clause license.
 // Please see the LICENSE file for more details.
 
-use super::get_custom_inventory;
+use super::{get_custom_inventory, split_nat_aware_custom_inventory};
 use crate::{DeploymentInventoryService, TestnetDeployBuilder};
 use color_eyre::{eyre::eyre, Result};
 use sn_testnet_deploy::{CloudProvider, NodeType, UpgradeOptions};
@@ -43,34 +43,79 @@ pub async fn handle_upgrade_command(
         return Err(eyre!("The {name} environment does not exist"));
     }
 
-    let custom_inventory = if let Some(custom_inventory) = custom_inventory {
-        let custom_vms = get_custom_inventory(&inventory, &custom_inventory)?;
-        Some(custom_vms)
-    } else {
-        None
-    };
-
     let testnet_deployer = TestnetDeployBuilder::default()
         .ansible_forks(forks)
         .ansible_verbose_mode(ansible_verbose)
         .environment_name(&name)
         .provider(provider)
         .build()?;
-    testnet_deployer.upgrade(UpgradeOptions {
-        ansible_verbose,
-        branch,
-        custom_inventory,
-        env_variables,
-        force,
-        forks,
-        interval,
-        name: name.clone(),
-        node_type,
-        provider,
-        pre_upgrade_delay,
-        repo_owner,
-        version,
-    })?;
+
+    if let Some(custom_inventory) = custom_inventory {
+        let custom_vms = get_custom_inventory(&inventory, &custom_inventory)?;
+        let inv_dir = testnet_deployer
+            .working_directory_path
+            .join("ansible")
+            .join("inventory");
+        let ssh_sk_path = &testnet_deployer.ssh_client.private_key_path;
+        let split = split_nat_aware_custom_inventory(
+            &inventory,
+            &custom_vms,
+            &name,
+            &inv_dir,
+            ssh_sk_path,
+        )?;
+
+        if !split.regular_vms.is_empty() {
+            testnet_deployer.upgrade(UpgradeOptions {
+                ansible_verbose,
+                branch: branch.clone(),
+                custom_inventory: Some(split.regular_vms),
+                env_variables: env_variables.clone(),
+                force,
+                forks,
+                interval,
+                name: name.clone(),
+                node_type: None,
+                provider,
+                pre_upgrade_delay,
+                repo_owner: repo_owner.clone(),
+                version: version.clone(),
+            })?;
+        }
+        for nat_type in &split.nat_node_types {
+            testnet_deployer.upgrade(UpgradeOptions {
+                ansible_verbose,
+                branch: branch.clone(),
+                custom_inventory: None,
+                env_variables: env_variables.clone(),
+                force,
+                forks,
+                interval,
+                name: name.clone(),
+                node_type: Some(*nat_type),
+                provider,
+                pre_upgrade_delay,
+                repo_owner: repo_owner.clone(),
+                version: version.clone(),
+            })?;
+        }
+    } else {
+        testnet_deployer.upgrade(UpgradeOptions {
+            ansible_verbose,
+            branch,
+            custom_inventory: None,
+            env_variables,
+            force,
+            forks,
+            interval,
+            name: name.clone(),
+            node_type,
+            provider,
+            pre_upgrade_delay,
+            repo_owner,
+            version,
+        })?;
+    }
 
     // Recreate the deployer with an increased number of forks for retrieving the status.
     let testnet_deployer = TestnetDeployBuilder::default()
@@ -103,13 +148,34 @@ pub async fn handle_upgrade_antctl_command(
         return Err(eyre!("The {name} environment does not exist"));
     }
 
-    let custom_inventory = if let Some(custom_inventory) = custom_inventory {
+    if let Some(custom_inventory) = custom_inventory {
         let custom_vms = get_custom_inventory(&inventory, &custom_inventory)?;
-        Some(custom_vms)
-    } else {
-        None
-    };
+        let inv_dir = testnet_deployer
+            .working_directory_path
+            .join("ansible")
+            .join("inventory");
+        let ssh_sk_path = &testnet_deployer.ssh_client.private_key_path;
+        let split = split_nat_aware_custom_inventory(
+            &inventory,
+            &custom_vms,
+            &name,
+            &inv_dir,
+            ssh_sk_path,
+        )?;
 
-    testnet_deployer.upgrade_antctl(version.parse()?, node_type, custom_inventory)?;
+        let parsed_version: semver::Version = version.parse()?;
+        if !split.regular_vms.is_empty() {
+            testnet_deployer.upgrade_antctl(
+                parsed_version.clone(),
+                None,
+                Some(split.regular_vms),
+            )?;
+        }
+        for nat_type in &split.nat_node_types {
+            testnet_deployer.upgrade_antctl(parsed_version.clone(), Some(*nat_type), None)?;
+        }
+    } else {
+        testnet_deployer.upgrade_antctl(version.parse()?, node_type, None)?;
+    }
     Ok(())
 }
