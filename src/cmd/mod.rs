@@ -30,11 +30,16 @@ use color_eyre::{
 use log::debug;
 use semver::Version;
 use sn_testnet_deploy::{
+    ansible::inventory::{
+        generate_full_cone_private_node_static_environment_inventory,
+        generate_port_restricted_cone_private_node_static_environment_inventory,
+        generate_symmetric_private_node_static_environment_inventory,
+    },
     inventory::{DeploymentInventory, VirtualMachine},
     s3::S3Repository,
     BinaryOption, CloudProvider, EnvironmentType, EvmNetwork, LogFormat, NodeType,
 };
-use std::time::Duration;
+use std::{path::Path, time::Duration};
 
 #[allow(clippy::large_enum_variant)]
 #[derive(Subcommand, Debug)]
@@ -1577,6 +1582,134 @@ pub fn get_custom_inventory(
         debug!("  {} - {}", vm.name, vm.public_ip_addr);
     }
     Ok(custom_vms)
+}
+
+/// Result of splitting custom inventory VMs into regular VMs and NAT private node groups.
+///
+/// NAT private nodes (full-cone, symmetric, port-restricted) require SSH access through their
+/// gateway VMs. This struct separates them so callers can handle them using the appropriate
+/// static inventories instead of the plain custom inventory.
+pub struct NatAwareCustomInventory {
+    /// VMs that can be reached directly (not behind NAT gateways).
+    pub regular_vms: Vec<VirtualMachine>,
+    /// NAT node types that had their static inventories regenerated with just the subset VMs.
+    /// Callers should run their operation once per node type in this list.
+    pub nat_node_types: Vec<NodeType>,
+}
+
+/// Split custom inventory VMs into regular VMs and NAT private node groups.
+///
+/// For each NAT type found, this regenerates the static inventory with only the requested subset
+/// of VMs (and their matching gateways), so that `run_playbook()` auto-detection will use the
+/// correct ProxyCommand-based inventory.
+pub fn split_nat_aware_custom_inventory(
+    inventory: &DeploymentInventory,
+    custom_vms: &[VirtualMachine],
+    environment_name: &str,
+    inventory_dir: &Path,
+    ssh_sk_path: &Path,
+) -> Result<NatAwareCustomInventory> {
+    let mut regular_vms = Vec::new();
+    let mut full_cone_vms = Vec::new();
+    let mut symmetric_vms = Vec::new();
+    let mut port_restricted_vms = Vec::new();
+
+    for vm in custom_vms {
+        if inventory
+            .full_cone_private_node_vms
+            .iter()
+            .any(|nvm| nvm.vm.name == vm.name)
+        {
+            full_cone_vms.push(vm.clone());
+        } else if inventory
+            .symmetric_private_node_vms
+            .iter()
+            .any(|nvm| nvm.vm.name == vm.name)
+        {
+            symmetric_vms.push(vm.clone());
+        } else if inventory
+            .port_restricted_cone_private_node_vms
+            .iter()
+            .any(|nvm| nvm.vm.name == vm.name)
+        {
+            port_restricted_vms.push(vm.clone());
+        } else {
+            regular_vms.push(vm.clone());
+        }
+    }
+
+    let mut nat_node_types = Vec::new();
+
+    if !full_cone_vms.is_empty() {
+        let matching_gateways: Vec<_> = full_cone_vms
+            .iter()
+            .filter_map(|vm| {
+                let suffix = vm.name.split('-').next_back()?;
+                inventory
+                    .full_cone_nat_gateway_vms
+                    .iter()
+                    .find(|gw| gw.name.split('-').next_back() == Some(suffix))
+                    .cloned()
+            })
+            .collect();
+        generate_full_cone_private_node_static_environment_inventory(
+            environment_name,
+            inventory_dir,
+            &full_cone_vms,
+            &matching_gateways,
+            ssh_sk_path,
+        )?;
+        nat_node_types.push(NodeType::FullConePrivateNode);
+    }
+
+    if !symmetric_vms.is_empty() {
+        let matching_gateways: Vec<_> = symmetric_vms
+            .iter()
+            .filter_map(|vm| {
+                let suffix = vm.name.split('-').next_back()?;
+                inventory
+                    .symmetric_nat_gateway_vms
+                    .iter()
+                    .find(|gw| gw.name.split('-').next_back() == Some(suffix))
+                    .cloned()
+            })
+            .collect();
+        generate_symmetric_private_node_static_environment_inventory(
+            environment_name,
+            inventory_dir,
+            &symmetric_vms,
+            &matching_gateways,
+            ssh_sk_path,
+        )?;
+        nat_node_types.push(NodeType::SymmetricPrivateNode);
+    }
+
+    if !port_restricted_vms.is_empty() {
+        let matching_gateways: Vec<_> = port_restricted_vms
+            .iter()
+            .filter_map(|vm| {
+                let suffix = vm.name.split('-').next_back()?;
+                inventory
+                    .port_restricted_cone_nat_gateway_vms
+                    .iter()
+                    .find(|gw| gw.name.split('-').next_back() == Some(suffix))
+                    .cloned()
+            })
+            .collect();
+        generate_port_restricted_cone_private_node_static_environment_inventory(
+            environment_name,
+            inventory_dir,
+            &port_restricted_vms,
+            &matching_gateways,
+            ssh_sk_path,
+        )?;
+        nat_node_types.push(NodeType::PortRestrictedConePrivateNode);
+    }
+
+    Ok(NatAwareCustomInventory {
+        regular_vms,
+        nat_node_types,
+    })
 }
 
 pub async fn get_version_from_option(

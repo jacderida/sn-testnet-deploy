@@ -4,7 +4,7 @@
 // This SAFE Network Software is licensed under the BSD-3-Clause license.
 // Please see the LICENSE file for more details.
 
-use super::{get_custom_inventory, get_version_from_option};
+use super::{get_custom_inventory, get_version_from_option, split_nat_aware_custom_inventory};
 
 use ant_releases::ReleaseType;
 use color_eyre::{eyre::eyre, Result};
@@ -45,14 +45,30 @@ pub async fn handle_start_command(
         return Err(eyre!("The {name} environment does not exist"));
     }
 
-    let custom_inventory = if let Some(custom_inventory) = custom_inventory {
+    if let Some(custom_inventory) = custom_inventory {
         let custom_vms = get_custom_inventory(&inventory, &custom_inventory)?;
-        Some(custom_vms)
-    } else {
-        None
-    };
+        let inv_dir = testnet_deployer
+            .working_directory_path
+            .join("ansible")
+            .join("inventory");
+        let ssh_sk_path = &testnet_deployer.ssh_client.private_key_path;
+        let split = split_nat_aware_custom_inventory(
+            &inventory,
+            &custom_vms,
+            &name,
+            &inv_dir,
+            ssh_sk_path,
+        )?;
 
-    testnet_deployer.start(interval, node_type, custom_inventory)?;
+        if !split.regular_vms.is_empty() {
+            testnet_deployer.start(interval, None, Some(split.regular_vms))?;
+        }
+        for nat_type in &split.nat_node_types {
+            testnet_deployer.start(interval, Some(*nat_type), None)?;
+        }
+    } else {
+        testnet_deployer.start(interval, node_type, None)?;
+    }
 
     Ok(())
 }
@@ -78,14 +94,30 @@ pub async fn handle_apply_delete_node_records_cron_command(
         return Err(eyre!("The {name} environment does not exist"));
     }
 
-    let custom_inventory = if let Some(custom_inventory) = custom_inventory {
+    if let Some(custom_inventory) = custom_inventory {
         let custom_vms = get_custom_inventory(&inventory, &custom_inventory)?;
-        Some(custom_vms)
-    } else {
-        None
-    };
+        let inv_dir = testnet_deployer
+            .working_directory_path
+            .join("ansible")
+            .join("inventory");
+        let ssh_sk_path = &testnet_deployer.ssh_client.private_key_path;
+        let split = split_nat_aware_custom_inventory(
+            &inventory,
+            &custom_vms,
+            &name,
+            &inv_dir,
+            ssh_sk_path,
+        )?;
 
-    testnet_deployer.apply_delete_node_records_cron(node_type, custom_inventory)?;
+        if !split.regular_vms.is_empty() {
+            testnet_deployer.apply_delete_node_records_cron(None, Some(split.regular_vms))?;
+        }
+        for nat_type in &split.nat_node_types {
+            testnet_deployer.apply_delete_node_records_cron(Some(*nat_type), None)?;
+        }
+    } else {
+        testnet_deployer.apply_delete_node_records_cron(node_type, None)?;
+    }
 
     Ok(())
 }
@@ -115,14 +147,30 @@ pub async fn handle_reset_command(
         return Err(eyre!("The {name} environment does not exist"));
     }
 
-    let custom_inventory = if let Some(custom_inventory) = custom_inventory {
+    if let Some(custom_inventory) = custom_inventory {
         let custom_vms = get_custom_inventory(&inventory, &custom_inventory)?;
-        Some(custom_vms)
-    } else {
-        None
-    };
+        let inv_dir = testnet_deployer
+            .working_directory_path
+            .join("ansible")
+            .join("inventory");
+        let ssh_sk_path = &testnet_deployer.ssh_client.private_key_path;
+        let split = split_nat_aware_custom_inventory(
+            &inventory,
+            &custom_vms,
+            &name,
+            &inv_dir,
+            ssh_sk_path,
+        )?;
 
-    testnet_deployer.reset(node_type, custom_inventory)?;
+        if !split.regular_vms.is_empty() {
+            testnet_deployer.reset(None, Some(split.regular_vms))?;
+        }
+        for nat_type in &split.nat_node_types {
+            testnet_deployer.reset(Some(*nat_type), None)?;
+        }
+    } else {
+        testnet_deployer.reset(node_type, None)?;
+    }
 
     Ok(())
 }
@@ -159,14 +207,43 @@ pub async fn handle_stop_command(
         .environment_name(&name)
         .provider(provider)
         .build()?;
-    let custom_inventory = if let Some(custom_inventory) = custom_inventory {
-        let custom_vms = get_custom_inventory(&inventory, &custom_inventory)?;
-        Some(custom_vms)
-    } else {
-        None
-    };
 
-    testnet_deployer.stop(interval, node_type, custom_inventory, delay, service_names)?;
+    if let Some(custom_inventory) = custom_inventory {
+        let custom_vms = get_custom_inventory(&inventory, &custom_inventory)?;
+        let inv_dir = testnet_deployer
+            .working_directory_path
+            .join("ansible")
+            .join("inventory");
+        let ssh_sk_path = &testnet_deployer.ssh_client.private_key_path;
+        let split = split_nat_aware_custom_inventory(
+            &inventory,
+            &custom_vms,
+            &name,
+            &inv_dir,
+            ssh_sk_path,
+        )?;
+
+        if !split.regular_vms.is_empty() {
+            testnet_deployer.stop(
+                interval,
+                None,
+                Some(split.regular_vms),
+                delay,
+                service_names.clone(),
+            )?;
+        }
+        for nat_type in &split.nat_node_types {
+            testnet_deployer.stop(
+                interval,
+                Some(*nat_type),
+                None,
+                delay,
+                service_names.clone(),
+            )?;
+        }
+    } else {
+        testnet_deployer.stop(interval, node_type, None, delay, service_names)?;
+    }
 
     Ok(())
 }
@@ -218,28 +295,49 @@ pub async fn handle_update_peer_command(
         .generate_or_retrieve_inventory(&name, true, None)
         .await?;
 
-    let custom_inventory = if let Some(custom_inventory) = custom_inventory {
-        let custom_vms = get_custom_inventory(&inventory, &custom_inventory)?;
-        Some(custom_vms)
-    } else {
-        None
-    };
-
     let mut extra_vars = ExtraVarsDocBuilder::default();
     extra_vars.add_variable("peer", &peer);
+    let extra_vars_doc = extra_vars.build();
 
-    let inventory_type = if let Some(custom_inventory) = custom_inventory {
-        println!("Updating peers against a custom inventory");
-        generate_custom_environment_inventory(
-            &custom_inventory,
+    if let Some(custom_inventory) = custom_inventory {
+        let custom_vms = get_custom_inventory(&inventory, &custom_inventory)?;
+        let inv_dir = testnet_deployer
+            .ansible_provisioner
+            .ansible_runner
+            .working_directory_path
+            .join("inventory");
+        let ssh_sk_path = &testnet_deployer.ssh_client.private_key_path;
+        let split = split_nat_aware_custom_inventory(
+            &inventory,
+            &custom_vms,
             &name,
-            &testnet_deployer
+            &inv_dir,
+            ssh_sk_path,
+        )?;
+
+        if !split.regular_vms.is_empty() {
+            println!("Updating peers against a custom inventory");
+            generate_custom_environment_inventory(&split.regular_vms, &name, &inv_dir)?;
+            testnet_deployer
                 .ansible_provisioner
                 .ansible_runner
-                .working_directory_path
-                .join("inventory"),
-        )?;
-        AnsibleInventoryType::Custom
+                .run_playbook(
+                    AnsiblePlaybook::UpdatePeer,
+                    AnsibleInventoryType::Custom,
+                    Some(extra_vars_doc.clone()),
+                )?;
+        }
+        for nat_type in &split.nat_node_types {
+            println!("Updating peers against {nat_type:?} inventory");
+            testnet_deployer
+                .ansible_provisioner
+                .ansible_runner
+                .run_playbook(
+                    AnsiblePlaybook::UpdatePeer,
+                    nat_type.to_ansible_inventory_type(),
+                    Some(extra_vars_doc.clone()),
+                )?;
+        }
     } else {
         let inventory_type = match node_type {
             Some(NodeType::FullConePrivateNode) => AnsibleInventoryType::FullConePrivateNodes,
@@ -254,17 +352,15 @@ pub async fn handle_update_peer_command(
             None => AnsibleInventoryType::Nodes,
         };
         println!("Updating peers against {inventory_type:?}");
-        inventory_type
-    };
-
-    testnet_deployer
-        .ansible_provisioner
-        .ansible_runner
-        .run_playbook(
-            AnsiblePlaybook::UpdatePeer,
-            inventory_type,
-            Some(extra_vars.build()),
-        )?;
+        testnet_deployer
+            .ansible_provisioner
+            .ansible_runner
+            .run_playbook(
+                AnsiblePlaybook::UpdatePeer,
+                inventory_type,
+                Some(extra_vars_doc),
+            )?;
+    }
 
     Ok(())
 }
@@ -316,18 +412,34 @@ pub async fn handle_reset_to_n_nodes_command(
     let ansible_runner = &testnet_deployer.ansible_provisioner.ansible_runner;
 
     if let Some(custom_inventory) = custom_inventory {
-        println!("Running the playbook with a custom inventory");
         let custom_vms = get_custom_inventory(&inventory, &custom_inventory)?;
-        generate_custom_environment_inventory(
+        let inv_dir = ansible_runner.working_directory_path.join("inventory");
+        let ssh_sk_path = &testnet_deployer.ssh_client.private_key_path;
+        let split = split_nat_aware_custom_inventory(
+            &inventory,
             &custom_vms,
             &name,
-            &ansible_runner.working_directory_path.join("inventory"),
+            &inv_dir,
+            ssh_sk_path,
         )?;
-        ansible_runner.run_playbook(
-            AnsiblePlaybook::ResetToNNodes,
-            AnsibleInventoryType::Custom,
-            Some(extra_vars.build()),
-        )?;
+
+        if !split.regular_vms.is_empty() {
+            println!("Running the playbook with a custom inventory");
+            generate_custom_environment_inventory(&split.regular_vms, &name, &inv_dir)?;
+            ansible_runner.run_playbook(
+                AnsiblePlaybook::ResetToNNodes,
+                AnsibleInventoryType::Custom,
+                Some(extra_vars.build()),
+            )?;
+        }
+        for nat_type in &split.nat_node_types {
+            println!("Running the playbook for {nat_type:?} nodes");
+            ansible_runner.run_playbook(
+                AnsiblePlaybook::ResetToNNodes,
+                nat_type.to_ansible_inventory_type(),
+                Some(extra_vars.build()),
+            )?;
+        }
         return Ok(());
     }
 

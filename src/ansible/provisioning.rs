@@ -1298,7 +1298,7 @@ impl AnsibleProvisioner {
             NodeType::PortRestrictedConePrivateNode => AnsiblePlaybook::Nodes,
             NodeType::SymmetricPrivateNode => AnsiblePlaybook::Nodes,
             NodeType::Upnp => AnsiblePlaybook::Upnp,
-            _ => return Err(Error::InvalidNodeType(node_type.clone())),
+            _ => return Err(Error::InvalidNodeType(node_type)),
         };
         self.ansible_runner.run_playbook(
             playbook,
@@ -1306,7 +1306,7 @@ impl AnsibleProvisioner {
             Some(extra_vars::build_node_extra_vars_doc(
                 &self.cloud_provider.to_string(),
                 options,
-                node_type.clone(),
+                node_type,
                 initial_contact_peer,
                 initial_network_contacts_url,
                 node_count,
