@@ -537,9 +537,13 @@ pub async fn drain_funds(
                     log::info!("No wallets found to drain funds from. Skipping wallet removal.");
                 }
             }
-            Ok(_) | Err(_) => {
-                println!("No client VMs or wallets found. Skipping wallet removal.");
-                log::info!("No client VMs or wallets found. Skipping wallet removal.");
+            Ok(_) => {
+                println!("No client VMs found. Skipping wallet removal.");
+                log::info!("No client VMs found. Skipping wallet removal.");
+            }
+            Err(err) => {
+                log::error!("Failed to get ANT instance count: {err:?}");
+                return Err(err);
             }
         }
         Ok(())
