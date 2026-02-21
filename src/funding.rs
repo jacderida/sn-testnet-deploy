@@ -22,6 +22,10 @@ use std::str::FromStr;
 const DEFAULT_TOKEN_AMOUNT: &str = "100_000_000_000_000_000_000";
 /// 0.1 ETH (1e17)
 const DEFAULT_GAS_AMOUNT: &str = "100_000_000_000_000_000";
+/// 0.001 ETH (1e13) - minimum gas reserve for transaction fees.
+/// Wallets with a balance at or below this threshold are skipped during drain
+/// because the cost of the transfer would exceed or consume the remaining balance.
+const GAS_RESERVE: &str = "10_000_000_000_000";
 
 pub struct FundingOptions {
     pub evm_network: EvmNetwork,
@@ -176,6 +180,33 @@ impl AnsibleProvisioner {
                 let from_wallet =
                     Wallet::new(evm_network.clone(), EthereumWallet::new(ant_sk.clone()));
 
+                let gas_reserve = U256::from_str(GAS_RESERVE).unwrap();
+
+                // Check gas balance first: token transfers also require gas, so if the gas
+                // balance is too low, we skip both token and gas draining for this wallet.
+                let gas_balance = from_wallet
+                    .balance_of_gas_tokens()
+                    .await
+                    .inspect_err(|err| {
+                        debug!(
+                            "Failed to get gas token balance for {} with err: {err:?}",
+                            from_wallet.address()
+                        )
+                    })?;
+
+                if gas_balance <= gas_reserve {
+                    println!(
+                        "Skipping wallet {}: gas balance {gas_balance} is too low to cover \
+                         transfer fees (reserve: {gas_reserve})",
+                        from_wallet.address()
+                    );
+                    debug!(
+                        "Skipping wallet {} with gas balance {gas_balance} <= reserve {gas_reserve}",
+                        from_wallet.address()
+                    );
+                    continue;
+                }
+
                 let token_balance = from_wallet.balance_of_tokens().await.inspect_err(|err| {
                     debug!(
                         "Failed to get token balance for {} with err: {err:?}",
@@ -183,21 +214,13 @@ impl AnsibleProvisioner {
                     )
                 })?;
 
-                println!(
-                    "Draining {token_balance} tokens from {} to {to_address:?}",
-                    from_wallet.address()
-                );
-                debug!(
-                    "Draining {token_balance} tokens from {} to {to_address:?}",
-                    from_wallet.address()
-                );
-
                 if token_balance.is_zero() {
-                    debug!(
-                        "No tokens to drain from wallet: {} with token balance",
+                    debug!("No tokens to drain from wallet: {}", from_wallet.address());
+                } else {
+                    println!(
+                        "Draining {token_balance} tokens from {} to {to_address:?}",
                         from_wallet.address()
                     );
-                } else {
                     from_wallet
                         .transfer_tokens(to_address, token_balance)
                         .await
@@ -210,51 +233,25 @@ impl AnsibleProvisioner {
                         "Drained {token_balance} tokens from {} to {to_address:?}",
                         from_wallet.address()
                     );
-                    debug!(
-                        "Drained {token_balance} tokens from {} to {to_address:?}",
-                        from_wallet.address()
-                    );
                 }
 
-                let gas_balance = from_wallet
-                    .balance_of_gas_tokens()
+                println!(
+                    "Draining gas from {} to {to_address:?} (balance: {gas_balance})",
+                    from_wallet.address()
+                );
+                from_wallet
+                    .transfer_gas_tokens(to_address, gas_balance - gas_reserve)
                     .await
                     .inspect_err(|err| {
                         debug!(
-                            "Failed to get gas token balance for {} with err: {err:?}",
+                            "Failed to transfer gas from {} with err: {err:?}",
                             from_wallet.address()
                         )
                     })?;
-
                 println!(
-                    "Draining {gas_balance} gas from {} to {to_address:?}",
+                    "Drained gas from {} to {to_address:?}",
                     from_wallet.address()
                 );
-                debug!(
-                    "Draining {gas_balance} gas from {} to {to_address:?}",
-                    from_wallet.address()
-                );
-
-                if gas_balance.is_zero() {
-                    debug!("No gas tokens to drain from wallet: {to_address}");
-                } else {
-                    from_wallet
-                    // 0.001 gas
-                        .transfer_gas_tokens(to_address, gas_balance - U256::from_str("10_000_000_000_000").unwrap()).await
-                        .inspect_err(|err| {
-                            debug!(
-                                "Failed to transfer {gas_balance} gas from {to_address} with err: {err:?}",
-                            )
-                        })?;
-                    println!(
-                        "Drained {gas_balance} gas from {} to {to_address:?}",
-                        from_wallet.address()
-                    );
-                    debug!(
-                        "Drained {gas_balance} gas from {} to {to_address:?}",
-                        from_wallet.address()
-                    );
-                }
             }
         }
         println!("All funds drained to {to_address:?} successfully");
