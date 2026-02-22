@@ -717,7 +717,7 @@ pub fn build_clients_extra_vars_doc(
         extra_vars.add_variable("max_uploads", &max_uploads.to_string());
     }
 
-    extra_vars.add_boolean_variable("merkle", options.merkle);
+    extra_vars.add_boolean_variable("regular", options.regular);
 
     extra_vars.add_variable(
         "upload_batch_size",

@@ -578,9 +578,11 @@ pub enum Commands {
         /// The maximum number of log files to keep. After reaching this limit, the older files are archived.
         #[clap(long, default_value = "10")]
         max_log_files: u16,
-        /// Enable merkle mode for uploads.
+        /// Enable regular payment mode for uploads.
+        ///
+        /// By default, uploads use merkle payments. Use this flag to switch to regular payments.
         #[clap(long, default_value_t = false)]
-        merkle: bool,
+        regular: bool,
         /// The name of the environment
         #[arg(short = 'n', long)]
         name: String,

@@ -21,10 +21,10 @@ Environment="{{ client_env_variables }}"
 {% endif %}
 User=ant{{ count }}
 {% if network_id == "1" %}
-ExecStart=/home/ant{{ count }}/ant_random_uploader.sh{% if merkle|default(false) %} --merkle{% endif %}{% if single_node_payments|default(false) %} --single-node-payment{% endif %}
+ExecStart=/home/ant{{ count }}/ant_random_uploader.sh{% if regular|default(false) %} --regular{% endif %}{% if single_node_payments|default(false) %} --single-node-payment{% endif %}
 
 {% else %}
-ExecStart=/home/ant{{ count }}/ant_random_uploader.sh --network-id "{{network_id}}" {% if peer is defined %}--peer "{{ peer }}" {% endif %}{% if network_contacts_url is defined %} --network-contacts-url "{{network_contacts_url}}"{% endif %}{% if merkle|default(false) %} --merkle{% endif %}{% if single_node_payments|default(false) %} --single-node-payment{% endif %}
+ExecStart=/home/ant{{ count }}/ant_random_uploader.sh --network-id "{{network_id}}" {% if peer is defined %}--peer "{{ peer }}" {% endif %}{% if network_contacts_url is defined %} --network-contacts-url "{{network_contacts_url}}"{% endif %}{% if regular|default(false) %} --regular{% endif %}{% if single_node_payments|default(false) %} --single-node-payment{% endif %}
 
 {% endif %}
 

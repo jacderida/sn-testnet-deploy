@@ -51,7 +51,7 @@ pub struct DeployOptions {
     pub max_archived_log_files: u16,
     pub max_log_files: u16,
     pub max_uploads: Option<u32>,
-    pub merkle: bool,
+    pub regular: bool,
     pub name: String,
     pub network_id: u8,
     pub network_dashboard_branch: Option<String>,

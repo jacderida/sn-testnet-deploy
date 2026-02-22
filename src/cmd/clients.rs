@@ -976,9 +976,11 @@ pub enum ClientsCommands {
         /// This argument only applies if the EVM network type is 'custom'.
         #[arg(long)]
         evm_rpc_url: Option<String>,
-        /// Enable merkle mode for uploads.
+        /// Enable regular payment mode for uploads.
+        ///
+        /// By default, uploads use merkle payments. Use this flag to switch to regular payments.
         #[clap(long, default_value_t = false)]
-        merkle: bool,
+        regular: bool,
         /// The name of the environment
         #[arg(short = 'n', long)]
         name: String,
@@ -1416,7 +1418,7 @@ pub async fn handle_clients_command(cmd: ClientsCommands) -> Result<()> {
                 max_archived_log_files: 1,
                 max_log_files: 1,
                 max_uploads,
-                merkle: false,
+                regular: false,
                 name: name.clone(),
                 network_contacts_url,
                 network_id: Some(network_id),
@@ -1577,7 +1579,7 @@ pub async fn handle_clients_command(cmd: ClientsCommands) -> Result<()> {
                 max_archived_log_files: 1,
                 max_log_files: 1,
                 max_uploads: None,
-                merkle: false,
+                regular: false,
                 name: name.clone(),
                 network_contacts_url,
                 network_id: Some(network_id),
@@ -1732,7 +1734,7 @@ pub async fn handle_clients_command(cmd: ClientsCommands) -> Result<()> {
                 max_archived_log_files: 1,
                 max_log_files: 1,
                 max_uploads: None,
-                merkle: false,
+                regular: false,
                 name: name.clone(),
                 network_contacts_url,
                 network_id: Some(network_id),
@@ -1866,7 +1868,7 @@ pub async fn handle_clients_command(cmd: ClientsCommands) -> Result<()> {
                 max_archived_log_files: 1,
                 max_log_files: 1,
                 max_uploads: None,
-                merkle: false,
+                regular: false,
                 name: name.clone(),
                 network_contacts_url: None,
                 network_id: None,
@@ -2004,7 +2006,7 @@ pub async fn handle_clients_command(cmd: ClientsCommands) -> Result<()> {
                 max_archived_log_files: 1,
                 max_log_files: 1,
                 max_uploads: None,
-                merkle: false,
+                regular: false,
                 name: name.clone(),
                 network_contacts_url: None,
                 network_id: None,
@@ -2171,7 +2173,7 @@ pub async fn handle_clients_command(cmd: ClientsCommands) -> Result<()> {
                 max_archived_log_files: 1,
                 max_log_files: 1,
                 max_uploads: None,
-                merkle: false,
+                regular: false,
                 name: name.clone(),
                 network_contacts_url,
                 network_id: Some(network_id),
@@ -2223,7 +2225,7 @@ pub async fn handle_clients_command(cmd: ClientsCommands) -> Result<()> {
             evm_network_type,
             evm_payment_token_address,
             evm_rpc_url,
-            merkle,
+            regular,
             name,
             network_id,
             network_contacts_url,
@@ -2321,7 +2323,7 @@ pub async fn handle_clients_command(cmd: ClientsCommands) -> Result<()> {
                 max_archived_log_files: 1,
                 max_log_files: 1,
                 max_uploads: None,
-                merkle,
+                regular,
                 name: name.clone(),
                 network_contacts_url,
                 network_id: Some(network_id),

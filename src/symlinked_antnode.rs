@@ -190,7 +190,7 @@ impl SymlinkedAntnodeDeployer {
                 max_archived_log_files: 5,
                 max_log_files: 10,
                 max_uploads: None,
-                merkle: false,
+                regular: false,
                 name: self.name.clone(),
                 network_id,
                 network_dashboard_branch: None,

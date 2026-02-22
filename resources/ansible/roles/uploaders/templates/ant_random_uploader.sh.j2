@@ -1,10 +1,11 @@
 #!/usr/bin/env bash
 
-# Usage: ./script.sh [-p PEER] [-u URL] [-n ID] [-s]
+# Usage: ./script.sh [-p PEER] [-u URL] [-n ID] [-r] [-s]
 #
 #   -p, --peer: Optional contact peer
 #   -u, --network-contacts-url: Optional network contacts URL
 #   -n, --network-id: Optional network ID (also enables testnet mode)
+#   -r, --regular: Optional flag to enable regular payment mode (default is merkle)
 #   -s, --single-node-payment: Optional flag to enable single node payment mode
 
 log_path="{{ upload_log_path }}"
@@ -39,20 +40,20 @@ fi
 CONTACT_PEER=""
 NETWORK_CONTACTS_URL=""
 NETWORK_ID=""
-MERKLE=false
+REGULAR=false
 SINGLE_NODE_PAYMENT=false
 
 usage() {
-  echo "Usage: $0 [-p PEER] [-u URL] [-n ID] [-m] [-s]"
+  echo "Usage: $0 [-p PEER] [-u URL] [-n ID] [-r] [-s]"
   echo "  -p, --peer                    PEER: Optional contact peer"
   echo "  -u, --network-contacts-url    URL: Optional network contacts URL"
   echo "  -n, --network-id              ID: Optional network ID (also enables testnet mode)"
-  echo "  -m, --merkle                  Enable merkle mode"
+  echo "  -r, --regular                 Enable regular payment mode (default is merkle)"
   echo "  -s, --single-node-payment     Enable single node payment mode"
   exit 1
 }
 
-TEMP=$(getopt -o p:u:n:ms --long peer:,network-contacts-url:,network-id:,merkle,single-node-payment -n 'ant_random_uploader.sh' -- "$@")
+TEMP=$(getopt -o p:u:n:rs --long peer:,network-contacts-url:,network-id:,regular,single-node-payment -n 'ant_random_uploader.sh' -- "$@")
 
 if [[ $? != 0 ]]; then
   echo "Failed to parse arguments" >&2
@@ -76,8 +77,8 @@ while true; do
       NETWORK_ID="$2"
       shift 2
       ;;
-    -m|--merkle)
-      MERKLE=true
+    -r|--regular)
+      REGULAR=true
       shift
       ;;
     -s|--single-node-payment)
@@ -98,7 +99,7 @@ done
 CONTACT_PEER_ARG=""
 NETWORK_CONTACTS_URL_ARG=""
 NETWORK_ID_ARG=""
-MERKLE_ARG=""
+PAYMENT_MODE_ARG="--merkle"
 SINGLE_NODE_PAYMENT_ARG=""
 
 if [[ -n "$CONTACT_PEER" ]]; then
@@ -113,9 +114,9 @@ if [[ -n "$NETWORK_ID" ]]; then
   echo "Setting network ID arg to $NETWORK_ID"
   NETWORK_ID_ARG="--network-id $NETWORK_ID"
 fi
-if [[ "$MERKLE" == "true" ]]; then
-  echo "Enabling merkle mode"
-  MERKLE_ARG="--merkle"
+if [[ "$REGULAR" == "true" ]]; then
+  echo "Enabling regular payment mode"
+  PAYMENT_MODE_ARG="--regular"
 fi
 if [[ "$SINGLE_NODE_PAYMENT" == "true" ]]; then
   echo "Enabling single node payment mode"
@@ -255,7 +256,7 @@ generate_random_data_file_and_upload() {
     $NETWORK_ID_ARG \
     $LOG_OUTPUT_ARG \
     file upload \
-    $MERKLE_ARG \
+    $PAYMENT_MODE_ARG \
     $SINGLE_NODE_PAYMENT_ARG \
     --no-archive \
     --public \
